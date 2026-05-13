@@ -1,0 +1,131 @@
+hive
+CREATE DATABASE flight_db;
+USE flight_db;
+---------------------------------------------------------------------------
+Create INTERNAL Table:
+CREATE TABLE flight_info (
+    year INT,
+    month INT,
+    day INT,
+    day_of_week INT,
+    dep_time INT,
+    crs_dep_time INT,
+    arr_time INT,
+    crs_arr_time INT,
+    unique_carrier STRING,
+    flight_num INT,
+    tail_num STRING,
+    actual_elapsed_time INT,
+    crs_elapsed_time INT,
+    air_time INT,
+    arr_delay INT,
+    dep_delay INT,
+    origin STRING,
+    dest STRING,
+    distance INT,
+    taxi_in INT,
+    taxi_out INT,
+    cancelled INT,
+    cancellation_code STRING,
+    diverted INT,
+    carrier_delay STRING,
+    weather_delay STRING,
+    nas_delay STRING,
+    security_delay STRING,
+    late_aircraft_delay STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+---------------------------------------------------------------------------
+Create EXTERNAL Table:
+CREATE EXTERNAL TABLE flight_info_ext (
+    year INT,
+    month INT,
+    day INT,
+    day_of_week INT,
+    dep_time INT,
+    crs_dep_time INT,
+    arr_time INT,
+    crs_arr_time INT,
+    unique_carrier STRING,
+    flight_num INT,
+    tail_num STRING,
+    actual_elapsed_time INT,
+    crs_elapsed_time INT,
+    air_time INT,
+    arr_delay INT,
+    dep_delay INT,
+    origin STRING,
+    dest STRING,
+    distance INT,
+    taxi_in INT,
+    taxi_out INT,
+    cancelled INT,
+    cancellation_code STRING,
+    diverted INT,
+    carrier_delay STRING,
+    weather_delay STRING,
+    nas_delay STRING,
+    security_delay STRING,
+    late_aircraft_delay STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE
+LOCATION '/user/hadoop/flight_data/';
+---------------------------------------------------------------------------
+Upload CSV to HDFS:
+hdfs dfs -mkdir -p /user/hadoop/flight_data
+hdfs dfs -put flight_info.csv /user/hadoop/flight_data/
+---------------------------------------------------------------------------
+Load Data into INTERNAL Table:
+LOAD DATA INPATH '/user/hadoop/flight_data/flight_info.csv'
+INTO TABLE flight_info;
+---------------------------------------------------------------------------
+Insert New Record:
+INSERT INTO flight_info VALUES
+(2024, 1, 1, 2, 1000, 950, 1200, 1150, 'AI', 101, 'TN123',
+ 120, 110, 100, 10, 15, 'Pune', 'Delhi', 1200,
+ 5, 10, 0, NULL, 0, '0', '0', '0', '0', '0');
+---------------------------------------------------------------------------
+Alter Table (Add New Column):
+ALTER TABLE flight_info ADD COLUMNS (status STRING);
+---------------------------------------------------------------------------
+Create Second Table (for JOIN):
+CREATE TABLE airline_info (
+    unique_carrier STRING,
+    airline_name STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+---------------------------------------------------------------------------
+Insert Sample Data:
+INSERT INTO airline_info VALUES ('AI', 'Air India');
+INSERT INTO airline_info VALUES ('6E', 'Indigo');
+---------------------------------------------------------------------------
+JOIN Query:
+SELECT f.flight_num, f.unique_carrier, a.airline_name
+FROM flight_info f
+JOIN airline_info a
+ON f.unique_carrier = a.unique_carrier;
+---------------------------------------------------------------------------
+Create Index:
+CREATE INDEX idx_carrier
+ON TABLE flight_info (unique_carrier)
+AS 'COMPACT'
+WITH DEFERRED REBUILD;
+
+REBUILD INDEX (MANDATORY):
+ALTER INDEX idx_carrier ON flight_info REBUILD;
+---------------------------------------------------------------------------
+Average Departure Delay Per Day:
+SELECT year, month, day,
+       AVG(dep_delay) AS avg_departure_delay
+FROM flight_info
+GROUP BY year, month, day;
+---------------------------------------------------------------------------
+Drop Table / Database:
+DROP TABLE flight_info;
+DROP DATABASE flight_db;
